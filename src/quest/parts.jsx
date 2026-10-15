@@ -66,7 +66,7 @@ export function Speech({ who = "rae", children, className = "" }) {
  * Multiple choice. With `correct` it is marked (wrong picks show a reason and
  * cost a star-point). Without `correct` it is a prediction: any pick is fine.
  */
-export function ChoiceTask({ prompt, options, correct = null, onDone, onWrong, done: doneProp }) {
+export function ChoiceTask({ prompt, options, correct = null, onDone, onWrong, done: doneProp, tested = false }) {
   const [wrong, setWrong] = useState([]);
   const [picked, setPicked] = useState(doneProp ?? null);
   const [shakeId, setShakeId] = useState(null);
@@ -123,7 +123,7 @@ export function ChoiceTask({ prompt, options, correct = null, onDone, onWrong, d
           <b>Yes!</b> {right.why}
         </div>
       )}
-      {finished && isPredict && (
+      {finished && isPredict && !tested && (
         <div className="pop-in text-sm text-indigo-200">Prediction locked in. Now let’s test it.</div>
       )}
     </div>
