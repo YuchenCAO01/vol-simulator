@@ -64,19 +64,27 @@ export function Speech({ who = "rae", children, className = "" }) {
 
 /**
  * Multiple choice. With `correct` it is marked (wrong picks show a reason and
- * cost a star-point). Without `correct` it is a prediction: any pick is fine.
+ * cost a star-point). Without `correct` it is a prediction: any pick is fine,
+ * and the student can change it freely until the test runs (`tested`).
  */
 export function ChoiceTask({ prompt, options, correct = null, onDone, onWrong, done: doneProp, tested = false }) {
   const [wrong, setWrong] = useState([]);
   const [picked, setPicked] = useState(doneProp ?? null);
   const [shakeId, setShakeId] = useState(null);
   const isPredict = correct == null;
-  const finished = picked != null && (isPredict || picked === correct);
+  const finished = isPredict ? tested : picked != null && picked === correct;
   const lastWrong = wrong.length ? options.find((o) => o.id === wrong[wrong.length - 1]) : null;
 
   const choose = (o) => {
     if (finished) return;
-    if (isPredict || o.id === correct) {
+    if (isPredict) {
+      if (o.id !== picked) {
+        setPicked(o.id);
+        onDone?.(o.id, true);
+      }
+      return;
+    }
+    if (o.id === correct) {
       setPicked(o.id);
       onDone?.(o.id, wrong.length === 0);
     } else {
@@ -94,18 +102,20 @@ export function ChoiceTask({ prompt, options, correct = null, onDone, onWrong, d
   return (
     <div className="grid gap-2">
       {prompt && <div className="text-sm font-semibold text-slate-200">{prompt}</div>}
-      <div className="grid gap-2">
+      <div className="grid gap-2" role={isPredict ? "radiogroup" : undefined}>
         {options.map((o) => (
           <button
             type="button"
             key={o.id}
             disabled={finished}
             onClick={() => choose(o)}
+            role={isPredict ? "radio" : undefined}
+            aria-checked={isPredict ? picked === o.id : undefined}
             className={cx(
               "choice",
               shakeId === o.id && "shake",
               wrong.includes(o.id) && "choice-wrong",
-              finished && picked === o.id && (isPredict ? "choice-picked" : "choice-right"),
+              picked === o.id && (isPredict ? "choice-picked" : finished && "choice-right"),
               finished && picked !== o.id && "opacity-60"
             )}
           >
@@ -123,8 +133,8 @@ export function ChoiceTask({ prompt, options, correct = null, onDone, onWrong, d
           <b>Yes!</b> {right.why}
         </div>
       )}
-      {finished && isPredict && !tested && (
-        <div className="pop-in text-sm text-indigo-200">Prediction locked in. Now let’s test it.</div>
+      {isPredict && picked != null && !tested && (
+        <div className="text-sm text-indigo-200">Prediction saved. You can still change it until you test.</div>
       )}
     </div>
   );
